@@ -1,0 +1,138 @@
+############################
+##### IMPORTED MODULES #####
+############################
+import numpy as np
+import matplotlib.pyplot as plt
+
+################################
+##### FUNCTION DEFINITIONS #####
+################################
+#***** Probleme 1 *****
+def grad_lag1(xx,mu):
+    """
+    Renvoie le gradient du lagrangien du probleme.
+
+    ENTREE :
+      * xx : un tableau numpy (n,1)
+      * mu : un tableau numpy (m,1)
+
+    SORTIE :
+      * un tableau numpy (n,1)
+    """
+    x=xx[0,0]
+    y=xx[1,0]
+    z=xx[2,0]
+
+    m1=mu[0,0]
+    m2= mu[1,0]
+
+    return np.array([[-z+m2*z], [-z+2.*m1*y], [-x-y+2.*z*m1+x*m2]])
+
+def hess_lag1(xx,mu):
+    """
+    Renvoie la hessienne du lagrangien du probleme.
+
+    ENTREE :
+      * xx : un tableau numpy (n,1)
+      * mu : un tableau numpy (m,1)
+
+    SORTIE :
+      * un tableau numpy (n,n)
+    """
+    x=xx[0,0]
+    y=xx[1,0]
+    z=xx[2,0]
+
+    m1=mu[0,0]
+    m2= mu[1,0]
+    return np.array([[0,0,-1+m2],[0,2.*m1,-1],[-1+m2,-1,2.*m1]])
+
+def vecteur1(xx,mu):
+    """
+    Renvoie le vecteur a droite du probleme lineaire.
+
+    ENTREE :
+      * xx : un tableau numpy (n,1)
+
+    SORTIE :
+      * un tableau numpy (n+f,1) avec f le nombre de contraintes egalites
+    """
+    x=xx[0,0]
+    y=xx[1,0]
+    z=xx[2,0]
+
+    m1=mu[0,0]
+    m2= mu[1,0]
+
+    return np.array([[-z+m2*z], [-z+2.*m1*y], [-x-y+2.*z*m1+x*m2],[z**2+y**2-1.],[x*z-3.]])
+
+def matrice1(xx,mu):
+    """
+    Renvoie la matrice a gauche du probleme lineaire.
+
+    ENTREE :
+      * xx : un tableau numpy (n,1)
+
+    SORTIE :
+      * un tableau numpy (n+f,n+f) avec f le nombre de contraintes egalites
+    """
+    x=xx[0,0]
+    y=xx[1,0]
+    z=xx[2,0]
+
+    m1=mu[0,0]
+    m2= mu[1,0]
+
+    return - np.array([[0,0,-1+m2,0,z],[0,2.*m1,-1,2.*y,0],[-1+m2,-1,2.*m1,2.*z,x],[0,2.*y,2.*z,0,0],[z,0,x,0,0]])
+
+##################
+##### SCRIPT #####
+##################
+# PROBLEME 1
+print "##### PROBLEME 1 #####"
+#***** Initialisation *****
+#----- Liste pour les x(k) -----
+xx=[np.array([[0.1],[0.1],[0.1]])]
+
+#----- Liste pour les mutltiplicateurs de lagrange -----
+mu=[np.array([[0.1],[0.1]])]
+
+#----- Liste pour le residu -----
+residu=[np.linalg.norm(grad_lag1(xx[-1],mu[-1]))]
+
+#----- Parametres de l'algorithme -----
+tol=1.0e-10
+itermax=10000
+k = 0
+
+#***** Boucle *****
+while residu[-1] >= tol and k < itermax:
+    #----- Resolution du probleme lineaire -----
+    F = matrice1(xx[-1],mu[-1])
+    G = vecteur1(xx[-1],mu[-1])
+    delta= np.linalg.inv(F).dot(G)
+
+    #----- Avancement des points -----
+    delta_xx = delta[:3] #np.array([delta[0], delta[1], delta[2]])
+    delta_mu = delta[3:] #np.array([delta[3], delta[4]])
+    
+    xx.append(xx[-1] + delta_xx)
+    mu.append(mu[-1] + delta_mu)
+
+    #----- Residu -----
+    residu.append(np.linalg.norm(grad_lag1(xx[-1],mu[-1])))
+    k = k+1
+    print residu[-1]
+
+
+print 'Iteration', k
+print 'Solution', xx[-1]
+print 'Mult. Lagrange', mu[-1]
+
+print(np.linalg.eig(hess_lag1(xx[-1],mu[-1]))[0])
+
+
+plt.plot(residu,'g')
+plt.semilogy()
+plt.show()
+
